@@ -1,23 +1,24 @@
 /*
-* Copyright 2011 Software Freedom Conservancy
-*
-*  Licensed under the Apache License, Version 2.0 (the "License");
-*  you may not use this file except in compliance with the License.
-*  You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-*  Unless required by applicable law or agreed to in writing, software
-*  distributed under the License is distributed on an "AS IS" BASIS,
-*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-*  See the License for the specific language governing permissions and
-*  limitations under the License.
-*
-*/
+ * Copyright 2011 Software Freedom Conservancy
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ */
 
 // An object representing the current test, used external
 var currentTest = null; // TODO: get rid of this global, which mirrors the htmlTestRunner.currentTest
 var selenium = null;
+var logTestSuiteName = "unknow";
 
 var htmlTestRunner;
 var HtmlTestRunner = classCreate();
@@ -54,24 +55,26 @@ objectExtend(HtmlTestRunner.prototype, {
         if (selenium == null) {
             var appWindow = self._getApplicationWindow();
             try { appWindow.location; }
-            catch (e) { 
+            catch (e) {
                 // when reloading, we may be pointing at an old window (Perm Denied)
                 setTimeout(fnBind(function() {
                     self.loadSuiteFrame();
                 }, this), 50);
+		console.log(e);
                 return;
             }
 
             // TODO(simon): This gets things working on Firefox 4, but's not an ideal solution
             window.setTimeout(function() {
-              selenium = Selenium.createForWindow(appWindow);
-              self._registerCommandHandlers();
-              self.loadSuiteFrame();
+                selenium = Selenium.createForWindow(appWindow);
+                self._registerCommandHandlers();
+                self.loadSuiteFrame();
             }, 250);
             return;
         }
         self.controlPanel.setHighlightOption();
         var testSuiteName = self.controlPanel.getTestSuiteName();
+        logTestSuiteName = testSuiteName;
         if (testSuiteName) {
             suiteFrame.load(testSuiteName, function() {setTimeout(fnBind(self._onloadTestSuite, self), 50)} );
             selenium.browserbot.baseUrl = absolutify(testSuiteName, window.location.href);
@@ -112,7 +115,7 @@ objectExtend(HtmlTestRunner.prototype, {
             var testCaseLoaded = fnBind(function(){this.testCaseLoaded=true;},this);
             var testNumber = 0;
             if (this.controlPanel.getTestNumber() != null){
-                var testNumber = this.controlPanel.getTestNumber() - 1; 
+                var testNumber = this.controlPanel.getTestNumber() - 1;
             }
             this.getTestSuite().getSuiteRows()[testNumber].loadTestCase(testCaseLoaded);
         }
@@ -138,83 +141,6 @@ objectExtend(HtmlTestRunner.prototype, {
         this.getTestSuite().reset();
         this.runAllTests = true;
         this.runNextTest();
-
-      var add_sendkeys_key = function(key, unicodeChar, alias, botKey) {
-        botKey = botKey || key;
-        if (bot.Keyboard.Keys[botKey]) {
-          storedVars['KEY_' + key] = unicodeChar;
-          if (alias) {
-            storedVars['KEY_' + alias] = unicodeChar;
-          }
-          return true;
-        }
-        return false;
-      };
-
-      build_sendkeys_maps = function() {
-
-//  add_sendkeys_key("NULL", '\uE000');
-//  add_sendkeys_key("CANCEL", '\uE001'); // ^break
-//  add_sendkeys_key("HELP", '\uE002');
-        add_sendkeys_key("BACKSPACE", '\uE003', "BKSP");
-        add_sendkeys_key("TAB", '\uE004');
-//  add_sendkeys_key("CLEAR", '\uE005');
-//  add_sendkeys_key("RETURN", '\uE006');
-        add_sendkeys_key("ENTER", '\uE007');
-        add_sendkeys_key("SHIFT", '\uE008');
-        add_sendkeys_key("CONTROL", '\uE009', "CTRL");
-        add_sendkeys_key("ALT", '\uE00A');
-        add_sendkeys_key("PAUSE", '\uE00B');
-        add_sendkeys_key("ESC", '\uE00C', "ESCAPE");
-        add_sendkeys_key("SPACE", '\uE00D');
-        add_sendkeys_key("PAGE_UP", '\uE00E', "PGUP");
-        add_sendkeys_key("PAGE_DOWN", '\uE00F', "PGDN");
-        add_sendkeys_key("END", '\uE010');
-        add_sendkeys_key("HOME", '\uE011');
-        add_sendkeys_key("LEFT", '\uE012');
-        add_sendkeys_key("UP", '\uE013');
-        add_sendkeys_key("RIGHT", '\uE014');
-        add_sendkeys_key("DOWN", '\uE015');
-        add_sendkeys_key("INSERT", '\uE016', "INS");
-        add_sendkeys_key("DELETE", '\uE017', "DEL");
-        add_sendkeys_key("SEMICOLON", '\uE018');
-        add_sendkeys_key("EQUALS", '\uE019');
-
-        add_sendkeys_key("NUMPAD0", '\uE01A', "N0", "NUM_ZERO");  // number pad keys
-        add_sendkeys_key("NUMPAD1", '\uE01B', "N1", "NUM_ONE");
-        add_sendkeys_key("NUMPAD2", '\uE01C', "N2", "NUM_TWO");
-        add_sendkeys_key("NUMPAD3", '\uE01D', "N3", "NUM_THREE");
-        add_sendkeys_key("NUMPAD4", '\uE01E', "N4", "NUM_FOUR");
-        add_sendkeys_key("NUMPAD5", '\uE01F', "N5", "NUM_FIVE");
-        add_sendkeys_key("NUMPAD6", '\uE020', "N6", "NUM_SIX");
-        add_sendkeys_key("NUMPAD7", '\uE021', "N7", "NUM_SEVEN");
-        add_sendkeys_key("NUMPAD8", '\uE022', "N8", "NUM_EIGHT");
-        add_sendkeys_key("NUMPAD9", '\uE023', "N9", "NUM_NINE");
-        add_sendkeys_key("MULTIPLY", '\uE024', "MUL", "NUM_MULTIPLY");
-        add_sendkeys_key("ADD", '\uE025', "PLUS", "NUM_PLUS");
-        add_sendkeys_key("SEPARATOR", '\uE026', "SEP");
-        add_sendkeys_key("SUBTRACT", '\uE027', "MINUS", "NUM_MINUS");
-        add_sendkeys_key("DECIMAL", '\uE028', "PERIOD", "NUM_PERIOD");
-        add_sendkeys_key("DIVIDE", '\uE029', "DIV", "NUM_DIVISION");
-
-        add_sendkeys_key("F1", '\uE031');  // function keys
-        add_sendkeys_key("F2", '\uE032');
-        add_sendkeys_key("F3", '\uE033');
-        add_sendkeys_key("F4", '\uE034');
-        add_sendkeys_key("F5", '\uE035');
-        add_sendkeys_key("F6", '\uE036');
-        add_sendkeys_key("F7", '\uE037');
-        add_sendkeys_key("F8", '\uE038');
-        add_sendkeys_key("F9", '\uE039');
-        add_sendkeys_key("F10", '\uE03A');
-        add_sendkeys_key("F11", '\uE03B');
-        add_sendkeys_key("F12", '\uE03C');
-
-        add_sendkeys_key("META", '\uE03D', "COMMAND");
-
-      };
-
-      build_sendkeys_maps();
     },
 
     runNextTest: function () {
@@ -231,6 +157,7 @@ objectExtend(HtmlTestRunner.prototype, {
         //todo: move testFailed and storedVars to TestCase
         this.testFailed = false;
         this.currentTest = new HtmlRunnerTestLoop(testFrame.getCurrentTestCase(), this.metrics, this.commandFactory);
+
         currentTest = this.currentTest;
         this.currentTest.start();
     },
@@ -264,6 +191,7 @@ objectExtend(SeleniumFrame.prototype, {
     _handleLoad: function() {
         this._attachStylesheet();
         this._onLoad();
+
         if (this.loadCallback) {
             this.loadCallback();
         }
@@ -307,7 +235,7 @@ objectExtend(SeleniumFrame.prototype, {
         var isHTA = browserVersion.isHTA || false;
         // DGF TODO multiWindow
         location += (location.indexOf("?") == -1 ? "?" : "&");
-        location += "thisIsChrome=" + isChrome + "&thisIsHTA=" + isHTA; 
+        location += "thisIsChrome=" + isChrome + "&thisIsHTA=" + isHTA;
         if (browserVersion.isSafari) {
             // safari doesn't reload the page when the location equals to current location.
             // hence, set the location to blank so that the page will reload automatically.
@@ -321,7 +249,6 @@ objectExtend(SeleniumFrame.prototype, {
     load: function(/* url, [callback] */) {
         if (arguments.length > 1) {
             this.loadCallback = arguments[1];
-
         }
         this._setLocation(arguments[0]);
     }
@@ -491,7 +418,7 @@ objectExtend(HtmlTestRunnerControlPanel.prototype, {
     getAutoUrl: function() {
         return this._getQueryParameter("autoURL");
     },
-    
+
     getDefaultLogLevel: function() {
         return this._getQueryParameter("defaultLogLevel");
     },
@@ -568,9 +495,9 @@ objectExtend(HtmlTestCaseRow.prototype, {
 
     getCommand: function () {
         return new SeleniumCommand(getText(this.trElement.cells[0]),
-                getText(this.trElement.cells[1]),
-                getText(this.trElement.cells[2]),
-                this.isBreakpoint());
+            getText(this.trElement.cells[1]),
+            getText(this.trElement.cells[2]),
+            this.isBreakpoint());
     },
 
     markFailed: function(errorMsg) {
@@ -722,7 +649,7 @@ objectExtend(HtmlTestSuite.prototype, {
             var rowElement = testTable.rows[rowNum];
             result.push(new HtmlTestSuiteRow(rowElement, testFrame, this));
         }
-        
+
         // process the unsuited rows as well
         for (var tableNum = 1; tableNum < sel$A(this.suiteDocument.getElementsByTagName("table")).length; tableNum++) {
             testTable = tables[tableNum];
@@ -912,9 +839,9 @@ objectExtend(SeleniumTestResult.prototype, {
         for (var i = 0; i < form.elements.length; i++) {
             inputs[form.elements[i].name] = form.elements[i].value;
         }
-        
+
         var objFSO = new ActiveXObject("Scripting.FileSystemObject")
-        
+
         // DGF get CSS
         var styles = "";
         try {
@@ -928,26 +855,28 @@ objectExtend(SeleniumTestResult.prototype, {
                 xhr.send("");
                 styles = xhr.responseText;
             }
-        } catch (e) {}
-        
+        } catch (e) {
+		console.log(e);
+	}
+
         var scriptFile = objFSO.CreateTextFile(fileName);
-        
-        
+
+
         scriptFile.WriteLine("<html><head><title>Test suite results</title><style>");
         scriptFile.WriteLine(styles);
         scriptFile.WriteLine("</style>");
         scriptFile.WriteLine("<body>\n<h1>Test suite results</h1>" +
-             "\n\n<table>\n<tr>\n<td>result:</td>\n<td>" + inputs["result"] + "</td>\n" +
-             "</tr>\n<tr>\n<td>totalTime:</td>\n<td>" + inputs["totalTime"] + "</td>\n</tr>\n" +
-             "<tr>\n<td>numTestTotal:</td>\n<td>" + inputs["numTestTotal"] + "</td>\n</tr>\n" +
-             "<tr>\n<td>numTestPasses:</td>\n<td>" + inputs["numTestPasses"] + "</td>\n</tr>\n" +
-             "<tr>\n<td>numTestFailures:</td>\n<td>" + inputs["numTestFailures"] + "</td>\n</tr>\n" +
-             "<tr>\n<td>numCommandPasses:</td>\n<td>" + inputs["numCommandPasses"] + "</td>\n</tr>\n" +
-             "<tr>\n<td>numCommandFailures:</td>\n<td>" + inputs["numCommandFailures"] + "</td>\n</tr>\n" +
-             "<tr>\n<td>numCommandErrors:</td>\n<td>" + inputs["numCommandErrors"] + "</td>\n</tr>\n" +
-             "<tr>\n<td>" + inputs["suite"] + "</td>\n<td>&nbsp;</td>\n</tr></table><table>");
+            "\n\n<table>\n<tr>\n<td>result:</td>\n<td>" + inputs["result"] + "</td>\n" +
+            "</tr>\n<tr>\n<td>totalTime:</td>\n<td>" + inputs["totalTime"] + "</td>\n</tr>\n" +
+            "<tr>\n<td>numTestTotal:</td>\n<td>" + inputs["numTestTotal"] + "</td>\n</tr>\n" +
+            "<tr>\n<td>numTestPasses:</td>\n<td>" + inputs["numTestPasses"] + "</td>\n</tr>\n" +
+            "<tr>\n<td>numTestFailures:</td>\n<td>" + inputs["numTestFailures"] + "</td>\n</tr>\n" +
+            "<tr>\n<td>numCommandPasses:</td>\n<td>" + inputs["numCommandPasses"] + "</td>\n</tr>\n" +
+            "<tr>\n<td>numCommandFailures:</td>\n<td>" + inputs["numCommandFailures"] + "</td>\n</tr>\n" +
+            "<tr>\n<td>numCommandErrors:</td>\n<td>" + inputs["numCommandErrors"] + "</td>\n</tr>\n" +
+            "<tr>\n<td>" + inputs["suite"] + "</td>\n<td>&nbsp;</td>\n</tr></table><table>");
         var testNum = inputs["numTestTotal"];
-        
+
         for (var rowNum = 1; rowNum <= testNum; rowNum++) {
             scriptFile.WriteLine("<tr>\n<td>" + inputs["testTable." + rowNum] + "</td>\n<td>&nbsp;</td>\n</tr>");
         }
@@ -972,19 +901,52 @@ objectExtend(HtmlTestCase.prototype, {
             throw "htmlTestSuiteRow should not be null";
         }
         this.testWindow = testWindow;
+
         this.testDocument = testWindow.document;
+
         this.pathname = "'unknown'";
         try {
             if (this.testWindow.location) {
                 this.pathname = this.testWindow.location.pathname;
             }
-        } catch (e) {}
-            
+        } catch (e) {
+		console.log(e);
+	}
+
         this.htmlTestSuiteRow = htmlTestSuiteRow;
-        this.headerRow = new TitleRow(this.testDocument.getElementsByTagName("tr")[0]);
-        this.commandRows = this._collectCommandRows();
-        this.nextCommandRowIndex = 0;
-        this._addBreakpointSupport();
+
+
+	if (this.testDocument.getElementsByTagName("tr").length == 0){
+	   
+	    //------ FAKE HEADER --------
+	    var fakeHeader = this.testDocument.createElement("tr");
+	    var fakeTitle = this.testDocument.createElement("td");
+	    fakeTitle.appendChild(this.testDocument.createTextNode("EMPTY DOCUMENT :'( "));
+	    fakeHeader.appendChild(fakeTitle);
+	    this.headerRow = new TitleRow(fakeHeader);
+
+	    // -------- FAKE ROW ----
+            this.commandRows = [];
+	    var fakeElement = this.testDocument.createElement("tr");
+	    var fakeTD1 = this.testDocument.createElement("td");
+	    fakeTD1.appendChild(this.testDocument.createTextNode("assertEval"));
+	    var fakeTD2 = this.testDocument.createElement("td");
+	    fakeTD2.appendChild(this.testDocument.createTextNode("false"));
+	    var fakeTD3 = this.testDocument.createElement("td");
+	    fakeTD3.appendChild(this.testDocument.createTextNode("true"));
+	    fakeElement.appendChild(fakeTD1);
+	    fakeElement.appendChild(fakeTD2);
+	    fakeElement.appendChild(fakeTD3);
+	    this.commandRows.push(new HtmlTestCaseRow(fakeElement));
+
+	    this.nextCommandRowIndex = 0;            
+	}
+	else {
+		this.headerRow = new TitleRow(this.testDocument.getElementsByTagName("tr")[0]);
+		this.commandRows = this._collectCommandRows();
+		this.nextCommandRowIndex = 0;
+		this._addBreakpointSupport();
+	}
     },
 
     _collectCommandRows: function () {
@@ -1045,8 +1007,9 @@ objectExtend(HtmlTestCase.prototype, {
         this.htmlTestSuiteRow.markPassed();
     },
 
-    addErrorMessage: function(errorMsg, currentRow) {
+    addErrorMessage: function(errorMsg, currentRow, moreInformations) {
         errorMsg = errorMsg.replace(/ /g, String.fromCharCode(160)).replace("\n", '\\n');
+        errorMsg = errorMsg + " " + moreInformations;
         if (currentRow) {
             currentRow.markFailed(errorMsg);
         } else {
@@ -1086,12 +1049,12 @@ var get_new_rows = function() {
     for (var i = 0; i < new_block.length; i++) {
 
         var new_source = (new_block[i][0].tokenizer.source.slice(new_block[i][0].start,
-                new_block[i][0].end));
+            new_block[i][0].end));
 
         var row = '<td style="display:none;" class="js">getEval</td>' +
-                  '<td style="display:none;">currentTest.doNextCommand()</td>' +
-                  '<td style="white-space: pre;">' + new_source + '</td>' +
-                  '<td></td>'
+            '<td style="display:none;">currentTest.doNextCommand()</td>' +
+            '<td style="white-space: pre;">' + new_source + '</td>' +
+            '<td></td>'
 
         row_array.push(row);
     }
@@ -1171,6 +1134,7 @@ objectExtend(HtmlRunnerCommandFactory.prototype, {
 
 });
 
+
 var HtmlRunnerTestLoop = classCreate();
 objectExtend(HtmlRunnerTestLoop.prototype, new TestLoop());
 objectExtend(HtmlRunnerTestLoop.prototype, {
@@ -1225,13 +1189,37 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
         this._checkExpectedFailure(result);
         if (result.failed) {
             this.metrics.numCommandFailures += 1;
-            this._recordFailure(result.failureMessage);
+            this._recordFailure(result.failureMessage, '');
         } else if (result.passed) {
             this.metrics.numCommandPasses += 1;
             this.currentRow.markPassed();
         } else {
             this.currentRow.markDone();
         }
+		
+		if (this.currentCommand != null && this.currentCommand.command.indexOf("dumpTvScreenAndWait") > -1){	
+			LOG.warn ("Screenshot saved");
+		
+		 var now = new Date();
+        var annee   = now.getFullYear();
+        var mois    = ((now.getMonth() + 1)<10?'0':'') + (now.getMonth()+1);
+        var jour    = (now.getDate()<10?'0':'') + now.getDate();
+        var heure   = (now.getHours()<10?'0':'') + now.getHours();
+        var minute  = (now.getMinutes()<10?'0':'') + now.getMinutes();
+        var seconde = (now.getSeconds()<10?'0':'') + now.getSeconds();
+        var datetime_string = annee + mois + jour + "_" + heure + minute + seconde;
+
+        var testSuiteName = this.getName(logTestSuiteName);
+        var testCaseName = this.getName(this.htmlTestCase.pathname);
+		
+			// Retrieve Screenshot
+			var pathScreenOnFailure = "/var/lib/jenkins/screenshotOnFailure";
+			var domStr = pathScreenOnFailure + "/" + testSuiteName + "-" + testCaseName + "-" + datetime_string + "_DOM.html";
+			this.create_file(domStr, selenium.browserbot.getDocument().documentElement.outerHTML);
+					
+			//TODO integrate in report 
+			LOG.warn ("Screenshot available under <a href=\"http://10.185.111.250/selenium_screenshotOnFailure/displayScreenshotOnFailure.php?failedTest=" + testSuiteName + "-" + testCaseName + "-" + datetime_string + "\">screenshot</a>");
+		}
     },
 
     _checkExpectedFailure : function(result) {
@@ -1257,7 +1245,7 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
                 } else {
                     result.failed = true;
                     result.failureMessage = "Expected " + this.expectedFailureType + " message '" + this.expectedFailure
-                                            + "' but was '" + result.failureMessage + "'";
+                        + "' but was '" + result.failureMessage + "'";
                 }
             }
             this.expectedFailure = null;
@@ -1265,7 +1253,77 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
         }
     },
 
+    getName : function(path) {
+        var filename = path.substring(path.lastIndexOf('/')+1);
+        return filename.substr(0,filename.lastIndexOf(".")).replace(/([^A-Za-z0-9]+)/gi,'_');
+
+    },
+
+	create_file : function(filename,body) {
+	
+        var file = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
+        file.initWithPath(filename);
+
+        // file is nsIFile, data is a string
+        var foStream = Components.classes["@mozilla.org/network/file-output-stream;1"].createInstance(Components.interfaces.nsIFileOutputStream);
+
+        // use 0x02 | 0x10 to open file for appending.
+        foStream.init(file, 0x02 | 0x08 | 0x20, 0666, 0);
+        // write, create, truncate
+        // In a c file operation, we have no need to set file mode with or operation,
+        // directly using "r" or "w" usually.
+
+        // if you are sure there will never ever be any non-ascii text in data you can
+        // also call foStream.write(data, data.length) directly
+        var converter = Components.classes["@mozilla.org/intl/converter-output-stream;1"].createInstance(Components.interfaces.nsIConverterOutputStream);
+        converter.init(foStream, "UTF-8", 0, 0);
+        converter.writeString(body);
+        converter.close(); // this closes foStream
+	
+	},
+	
     commandError : function(errorMessage) {
+
+		//console.log("coucou");
+	
+        var now = new Date();
+        var annee   = now.getFullYear();
+        var mois    = ((now.getMonth() + 1)<10?'0':'') + (now.getMonth()+1);
+        var jour    = (now.getDate()<10?'0':'') + now.getDate();
+        var heure   = (now.getHours()<10?'0':'') + now.getHours();
+        var minute  = (now.getMinutes()<10?'0':'') + now.getMinutes();
+        var seconde = (now.getSeconds()<10?'0':'') + now.getSeconds();
+        var datetime_string = annee + mois + jour + "_" + heure + minute + seconde;
+
+        var testSuiteName = this.getName(logTestSuiteName);
+        var testCaseName = this.getName(this.htmlTestCase.pathname);
+
+        var testBaseURL = selenium.browserbot.baseUrl;
+
+		var pathScreenOnFailure = "/var/lib/jenkins/screenshotOnFailure";
+        var fileStr = pathScreenOnFailure + "/" + testSuiteName + "-" + testCaseName + "-" + datetime_string + ".png";
+		var stbLogStr = pathScreenOnFailure + "/" + testSuiteName + "-" + testCaseName + "-" + datetime_string + ".txt";
+		var domStr = pathScreenOnFailure + "/" + testSuiteName + "-" + testCaseName + "-" + datetime_string + "_DOM.html";
+
+		
+        selenium.doCaptureEntirePageScreenshot(fileStr);
+		this.create_file(domStr,selenium.browserbot.getDocument().documentElement.outerHTML);
+	
+		
+		try {
+			// Synchronous call to retrieve STB logs through associated pi
+			var xmlHttp = null;
+			xmlHttp = new XMLHttpRequest();
+			xmlHttp.open("GET", testBaseURL + "/StbGetLogs.php?mode=last", false);
+			xmlHttp.send(null);
+			var stbLogs = xmlHttp.responseText;
+			this.create_file(stbLogStr,stbLogs)		
+		}
+		catch (e){
+			LOG.warn("Unable to retrieve STB Logs");
+		}
+
+		
         var tempResult = {};
         tempResult.passed = false;
         tempResult.failed = true;
@@ -1276,15 +1334,18 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
             this.currentRow.markDone();
             return true;
         }
+		
         errorMessage = tempResult.failureMessage;
+        var moreInformation = "<br><a href=\"http://10.185.111.250/selenium_screenshotOnFailure/displayScreenshotOnFailure.php?failedTest=" + testSuiteName + "-" + testCaseName + "-" + datetime_string + "\">more informations</a>";
+				
         this.metrics.numCommandErrors += 1;
-        this._recordFailure(errorMessage);
+        this._recordFailure(errorMessage, moreInformation);
     },
 
-    _recordFailure : function(errorMsg) {
+    _recordFailure : function(errorMsg, moreInformations) {
         LOG.warn("currentTest.recordFailure: " + errorMsg);
         htmlTestRunner.markFailed();
-        this.htmlTestCase.addErrorMessage(errorMsg, this.currentRow);
+        this.htmlTestCase.addErrorMessage(errorMsg, this.currentRow, moreInformations);
     },
 
     testComplete : function() {
@@ -1340,7 +1401,7 @@ Selenium.prototype.doPause = function(waitTime) {
     /** Wait for the specified amount of time (in milliseconds)
      * @param waitTime the amount of time to sleep (in milliseconds)
      */
-    // todo: should not refer to currentTest directly
+        // todo: should not refer to currentTest directly
     currentTest.pauseInterval = waitTime;
 };
 
@@ -1349,7 +1410,7 @@ Selenium.prototype.doBreak = function() {
      * This command is useful for debugging, but be careful when using it, because it will
      * force automated tests to hang until a user intervenes manually.
      */
-    // todo: should not refer to controlPanel directly
+        // todo: should not refer to controlPanel directly
     htmlTestRunner.controlPanel.setToPauseAtNextCommand();
 };
 
@@ -1416,7 +1477,7 @@ Selenium.prototype.assertSelected = function(selectLocator, optionLocator) {
 
 Selenium.prototype.assertFailureOnNext = function(message) {
     /**
-     * Tell Selenium to expect a failure on the next command execution. 
+     * Tell Selenium to expect a failure on the next command execution.
      * @param message The failure message we should expect.  This command will fail if the wrong failure message appears.
      */
     if (!message) {
@@ -1430,11 +1491,11 @@ Selenium.prototype.assertFailureOnNext = function(message) {
 
 Selenium.prototype.assertErrorOnNext = function(message) {
     /**
-     * Tell Selenium to expect an error on the next command execution. 
+     * Tell Selenium to expect an error on the next command execution.
      * @param message The error message we should expect.  This command will fail if the wrong error message appears.
      */
-     // This command temporarily installs a CommandFactory that generates
-     // CommandHandlers that expect an error.
+    // This command temporarily installs a CommandFactory that generates
+    // CommandHandlers that expect an error.
     if (!message) {
         throw new SeleniumError("Message must be provided");
     }
