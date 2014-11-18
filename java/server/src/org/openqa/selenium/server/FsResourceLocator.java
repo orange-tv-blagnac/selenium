@@ -15,49 +15,76 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-
 package org.openqa.selenium.server;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.openqa.jetty.http.HttpContext;
 import org.openqa.jetty.util.Resource;
 
-import java.io.File;
-import java.io.IOException;
-
 public class FsResourceLocator implements ResourceLocator {
-  private File rootDir;
-  private static final String USER_EXTENSIONS_JS_NAME = "user-extensions.js";
-  private static final String TEST_DIR = "/tests";
+	private File rootDir;
+	private static final String USER_EXTENSIONS_JS_NAME = "user-extensions.js";
+	private static final String TEST_DIR = "/tests";
+	private static final String REGEXP = "(/\\.\\.|\\\\.\\.|/tests/\\.\\.)";
 
-  public FsResourceLocator(File directory) {
-    this.rootDir = directory;
-  }
+	public FsResourceLocator(File directory) {
+		this.rootDir = directory;
+	}
 
-  public Resource getResource(HttpContext context, String pathInContext) throws IOException {
-    File file = new File(rootDir, pathInContext);
-    Resource resource = createFileResource(file, context);
-    // Throw in a hack to make it easier to install user extensions
-    if (!resource.exists() && file.getName().equals(USER_EXTENSIONS_JS_NAME)) {
-      resource = userExtensionResource(context);
-      if (resource.exists()) return resource;
-    }
-    // And another hack to make the -htmlSuite appear in the /tests directory
-    if (!resource.exists() && pathInContext.startsWith(TEST_DIR)) {
-      File testFile = new File(rootDir, pathInContext.substring(TEST_DIR.length()));
-      resource = createFileResource(testFile, context);
-      if (resource.exists()) return resource;
-    }
-    return resource;
-  }
+	public Resource getResource(HttpContext context, String pathInContext) throws IOException {
+		File file = null;
 
-  private Resource userExtensionResource(HttpContext context) throws IOException {
-    File extensions = new File(rootDir, USER_EXTENSIONS_JS_NAME);
-    return createFileResource(extensions, context);
-  }
+		// Hack for managing the up level under Linux for instance : ../../COMMON
+		// (to be checked under Windaube) => security issue
+		Pattern pattern = Pattern.compile(REGEXP);
+		Matcher matcher = pattern.matcher(pathInContext);
 
-  private Resource createFileResource(File file, HttpContext context) throws IOException {
-    Resource resource = new FutureFileResource(file.toURI().toURL());
-    context.getResourceMetaData(resource);
-    return resource;
-  }
+		while (matcher != null && matcher.find()) {
+			if (file == null) {
+				pathInContext = pathInContext.replace(matcher.group(1), "");
+				file = rootDir.getParentFile();
+			} else {
+				pathInContext = pathInContext.replace(matcher.group(1), "");
+				file = file.getParentFile();
+			}
+		}
+
+		if (file == null) {
+			file = new File(rootDir, pathInContext);
+		} else {
+			file = new File(file, pathInContext.replace("\\","/"));
+		}
+
+		Resource resource = createFileResource(file, context);
+		// Throw in a hack to make it easier to install user extensions
+		if (!resource.exists() && file.getName().equals(USER_EXTENSIONS_JS_NAME)) {
+			resource = userExtensionResource(context);
+			if (resource.exists())
+				return resource;
+		}
+		// And another hack to make the -htmlSuite appear in the /tests
+		// directory
+		if (!resource.exists() && pathInContext.startsWith(TEST_DIR)) {
+			File testFile = new File(rootDir, pathInContext.substring(TEST_DIR.length()));
+			resource = createFileResource(testFile, context);
+			if (resource.exists())
+				return resource;
+		}
+		return resource;
+	}
+
+	private Resource userExtensionResource(HttpContext context) throws IOException {
+		File extensions = new File(rootDir, USER_EXTENSIONS_JS_NAME);
+		return createFileResource(extensions, context);
+	}
+
+	private Resource createFileResource(File file, HttpContext context) throws IOException {
+		Resource resource = new FutureFileResource(file.toURI().toURL());
+		context.getResourceMetaData(resource);
+		return resource;
+	}
 }
