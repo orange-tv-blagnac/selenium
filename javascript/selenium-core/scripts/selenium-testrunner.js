@@ -1468,8 +1468,7 @@ Selenium.prototype.assertSelected = function(selectLocator, optionLocator) {
      */
     var element = this.page().findElement(selectLocator);
     var locator = this.optionLocatorFactory.fromLocatorString(optionLocator);
-    if (element.selectedIndex == -1)
-    {
+    if (element.selectedIndex == -1) {
         Assert.fail("No option selected");
     }
     locator.assertSelected(element);
