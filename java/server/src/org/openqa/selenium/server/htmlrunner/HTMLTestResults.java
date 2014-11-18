@@ -186,7 +186,7 @@ public class HTMLTestResults {
         suite.getUpdatedSuite()));
     out.write("<table>");
     for (int i = 0; i < testTables.size(); i++) {
-      String table = testTables.get(i).replace("\u00a0", "&nbsp;");
+      String table = testTables.get(i).replace("\u00a0", "&nbsp;").replace("&lt;", "<").replace("&gt;", ">");
       out.write(MessageFormat.format(SUITE_HTML, i, suite.getHref(i), table));
     }
     out.write("</table><pre>\n");
