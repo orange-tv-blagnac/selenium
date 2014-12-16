@@ -1207,18 +1207,19 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
         var heure   = (now.getHours()<10?'0':'') + now.getHours();
         var minute  = (now.getMinutes()<10?'0':'') + now.getMinutes();
         var seconde = (now.getSeconds()<10?'0':'') + now.getSeconds();
+	var datetime = annee + mois + jour; // in order to avoid to have all files (screenshot, dom, stb log) in the same directory (request from : Olivier Etienne)
         var datetime_string = annee + mois + jour + "_" + heure + minute + seconde;
 
         var testSuiteName = this.getName(logTestSuiteName);
         var testCaseName = this.getName(this.htmlTestCase.pathname);
 		
 			// Retrieve Screenshot
-			var pathScreenOnFailure = "/var/lib/jenkins/screenshotOnFailure";
+			var pathScreenOnFailure = "/var/lib/jenkins/screenshotOnFailure" + datetime;
 			var domStr = pathScreenOnFailure + "/" + testSuiteName + "-" + testCaseName + "-" + datetime_string + "_DOM.html";
 			this.create_file(domStr, selenium.browserbot.getDocument().documentElement.outerHTML);
 					
 			//TODO integrate in report 
-			LOG.warn ("Screenshot available under <a href=\"http://10.185.111.250/selenium_screenshotOnFailure/displayScreenshotOnFailure.php?failedTest=" + testSuiteName + "-" + testCaseName + "-" + datetime_string + "\">screenshot</a>");
+			LOG.warn ("Screenshot available under <a href=\"http://10.185.111.250/selenium_screenshotOnFailure/displayScreenshotOnFailure.php?dateDir=" + datetime + "&failedTest=" + testSuiteName + "-" + testCaseName + "-" + datetime_string + "\">screenshot</a>");
 		}
     },
 
