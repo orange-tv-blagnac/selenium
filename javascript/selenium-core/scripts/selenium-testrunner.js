@@ -1240,8 +1240,6 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
 	},
 	
     commandError : function(errorMessage) {
-
-	//console.log("coucou");
 	
         var now = new Date();
         var annee   = now.getFullYear();
@@ -1250,7 +1248,8 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
         var heure   = (now.getHours()<10?'0':'') + now.getHours();
         var minute  = (now.getMinutes()<10?'0':'') + now.getMinutes();
         var seconde = (now.getSeconds()<10?'0':'') + now.getSeconds();
-	var datetime = annee + mois + jour; // in order to avoid to have all files (screenshot, dom, stb log) in the same directory (request from : Olivier Etienne)
+
+	var datetime = annee + mois + jour;
         var datetime_string = annee + mois + jour + "_" + heure + minute + seconde;
 
         var testSuiteName = this.getName(logTestSuiteName);
@@ -1264,17 +1263,18 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
 	var stbLogStr = pathScreenOnFailure + "/" + testSuiteName + "-" + testCaseName + "-" + datetime_string + ".txt";
 	var domStr = pathScreenOnFailure + "/" + testSuiteName + "-" + testCaseName + "-" + datetime_string + "DOM.html";
 
-	console.log("path => " + pathScreenOnFailure);
-
+	// check whether the datetime folder exists
 	var isExist = this.checkDirExists(pathScreenOnFailure);
 
 	if (!isExist) {
-		// create datetime folder
+		// it doesn't exist, therefore we are going to create datetime folder
 		this.create_folders(path, datetime);
 	}
 		
-	// perform capture screenshot
+	// perform screenshot capture
         selenium.doCaptureEntirePageScreenshot(fileStr);
+
+	// perform dom capture
 	this.create_file(domStr,selenium.browserbot.getDocument().documentElement.outerHTML);
 	
 	// get stb logs
@@ -1287,7 +1287,6 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
 		this.create_file(stbLogStr,stbLogs)		
 	}
 
-		
         var tempResult = {};
         tempResult.passed = false;
         tempResult.failed = true;
@@ -1300,6 +1299,7 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
         }
 		
         errorMessage = tempResult.failureMessage;
+
 	// give an url to see the screenshot, dom and logs
         var moreInformation = "<br><a href=\"http://10.185.111.250/selenium_screenshotOnFailure/displayScreenshotOnFailure.php?dateDir=" + datetime + "&failedTest=" + testSuiteName + "-" + testCaseName + "-" + datetime_string + "\">more informations</a>";
 				
