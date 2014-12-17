@@ -937,10 +937,6 @@ objectExtend(HtmlTestCase.prototype, {
 		 this.nextCommandRowIndex = 0;
 		 this._addBreakpointSupport();
 	}
-        this.headerRow = new TitleRow(this.testDocument.getElementsByTagName("tr")[0]);
-        this.commandRows = this._collectCommandRows();
-        this.nextCommandRowIndex = 0;
-        this._addBreakpointSupport();
     },
 
     _collectCommandRows: function () {
