@@ -906,6 +906,37 @@ objectExtend(HtmlTestCase.prototype, {
         } catch (e) {}
 
         this.htmlTestSuiteRow = htmlTestSuiteRow;
+
+	if (this.testDocument.getElementsByTagName("tr").length == 0){
+		 //------ FAKE HEADER --------
+		 var fakeHeader = this.testDocument.createElement("tr");
+		 var fakeTitle = this.testDocument.createElement("td");
+		 fakeTitle.appendChild(this.testDocument.createTextNode("EMPTY DOCUMENT :'( "));
+		 fakeHeader.appendChild(fakeTitle);
+		 this.headerRow = new TitleRow(fakeHeader);
+
+		 // -------- FAKE ROW ----
+		 this.commandRows = [];
+		 var fakeElement = this.testDocument.createElement("tr");
+		 var fakeTD1 = this.testDocument.createElement("td");
+		 fakeTD1.appendChild(this.testDocument.createTextNode("assertEval"));
+		 var fakeTD2 = this.testDocument.createElement("td");
+		 fakeTD2.appendChild(this.testDocument.createTextNode("false"));
+		 var fakeTD3 = this.testDocument.createElement("td");
+		 fakeTD3.appendChild(this.testDocument.createTextNode("true"));
+		 fakeElement.appendChild(fakeTD1);
+		 fakeElement.appendChild(fakeTD2);
+		 fakeElement.appendChild(fakeTD3);
+		 this.commandRows.push(new HtmlTestCaseRow(fakeElement));
+
+		 this.nextCommandRowIndex = 0;
+	}
+	else {
+		 this.headerRow = new TitleRow(this.testDocument.getElementsByTagName("tr")[0]);
+		 this.commandRows = this._collectCommandRows();
+		 this.nextCommandRowIndex = 0;
+		 this._addBreakpointSupport();
+	}
         this.headerRow = new TitleRow(this.testDocument.getElementsByTagName("tr")[0]);
         this.commandRows = this._collectCommandRows();
         this.nextCommandRowIndex = 0;
