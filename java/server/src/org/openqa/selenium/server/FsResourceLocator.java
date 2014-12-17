@@ -17,6 +17,7 @@ limitations under the License.
 
 package org.openqa.selenium.server;
 
+import java.util.ArrayList;
 import java.io.File;
 import java.io.IOException;
 import java.util.regex.Matcher;
@@ -27,12 +28,14 @@ import org.openqa.jetty.util.Resource;
 
 public class FsResourceLocator implements ResourceLocator {
 	private File rootDir;
+	private ArrayList<String> listTestHtml;
 	private static final String USER_EXTENSIONS_JS_NAME = "user-extensions.js";
 	private static final String TEST_DIR = "/tests";
 	private static final String REGEXP = "(/\\.\\.|\\\\.\\.|/tests/\\.\\.)";
 
 	public FsResourceLocator(File directory) {
 		this.rootDir = directory;
+		this.listTestHtml = new ArrayList<String>();
 	}
 
 	public Resource getResource(HttpContext context, String pathInContext) throws IOException {
@@ -58,6 +61,11 @@ public class FsResourceLocator implements ResourceLocator {
 		} else {
 			file = new File(file, pathInContext.replace("\\","/"));
 		}
+
+		if (file.getAbsolutePath().endsWith("html") && !file.getAbsolutePath().matches("^.*selenium.*core.*$") && !listTestHtml.contains(file.getAbsolutePath())) {
+                        System.out.println(file);
+                        listTestHtml.add(file.getAbsolutePath());
+                }
 
 		Resource resource = createFileResource(file, context);
 		// Throw in a hack to make it easier to install user extensions

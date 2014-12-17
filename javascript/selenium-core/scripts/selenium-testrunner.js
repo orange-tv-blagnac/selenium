@@ -60,7 +60,6 @@ objectExtend(HtmlTestRunner.prototype, {
                 setTimeout(fnBind(function() {
                     self.loadSuiteFrame();
                 }, this), 50);
-		console.log(e);
                 return;
             }
 
@@ -157,7 +156,6 @@ objectExtend(HtmlTestRunner.prototype, {
         //todo: move testFailed and storedVars to TestCase
         this.testFailed = false;
         this.currentTest = new HtmlRunnerTestLoop(testFrame.getCurrentTestCase(), this.metrics, this.commandFactory);
-
         currentTest = this.currentTest;
         this.currentTest.start();
     },
@@ -191,7 +189,6 @@ objectExtend(SeleniumFrame.prototype, {
     _handleLoad: function() {
         this._attachStylesheet();
         this._onLoad();
-
         if (this.loadCallback) {
             this.loadCallback();
         }
@@ -249,6 +246,7 @@ objectExtend(SeleniumFrame.prototype, {
     load: function(/* url, [callback] */) {
         if (arguments.length > 1) {
             this.loadCallback = arguments[1];
+
         }
         this._setLocation(arguments[0]);
     }
@@ -855,9 +853,7 @@ objectExtend(SeleniumTestResult.prototype, {
                 xhr.send("");
                 styles = xhr.responseText;
             }
-        } catch (e) {
-		console.log(e);
-	}
+        } catch (e) {}
 
         var scriptFile = objFSO.CreateTextFile(fileName);
 
@@ -901,52 +897,19 @@ objectExtend(HtmlTestCase.prototype, {
             throw "htmlTestSuiteRow should not be null";
         }
         this.testWindow = testWindow;
-
         this.testDocument = testWindow.document;
-
         this.pathname = "'unknown'";
         try {
             if (this.testWindow.location) {
                 this.pathname = this.testWindow.location.pathname;
             }
-        } catch (e) {
-		console.log(e);
-	}
+        } catch (e) {}
 
         this.htmlTestSuiteRow = htmlTestSuiteRow;
-
-
-	if (this.testDocument.getElementsByTagName("tr").length == 0){
-	   
-	    //------ FAKE HEADER --------
-	    var fakeHeader = this.testDocument.createElement("tr");
-	    var fakeTitle = this.testDocument.createElement("td");
-	    fakeTitle.appendChild(this.testDocument.createTextNode("EMPTY DOCUMENT :'( "));
-	    fakeHeader.appendChild(fakeTitle);
-	    this.headerRow = new TitleRow(fakeHeader);
-
-	    // -------- FAKE ROW ----
-            this.commandRows = [];
-	    var fakeElement = this.testDocument.createElement("tr");
-	    var fakeTD1 = this.testDocument.createElement("td");
-	    fakeTD1.appendChild(this.testDocument.createTextNode("assertEval"));
-	    var fakeTD2 = this.testDocument.createElement("td");
-	    fakeTD2.appendChild(this.testDocument.createTextNode("false"));
-	    var fakeTD3 = this.testDocument.createElement("td");
-	    fakeTD3.appendChild(this.testDocument.createTextNode("true"));
-	    fakeElement.appendChild(fakeTD1);
-	    fakeElement.appendChild(fakeTD2);
-	    fakeElement.appendChild(fakeTD3);
-	    this.commandRows.push(new HtmlTestCaseRow(fakeElement));
-
-	    this.nextCommandRowIndex = 0;            
-	}
-	else {
-		this.headerRow = new TitleRow(this.testDocument.getElementsByTagName("tr")[0]);
-		this.commandRows = this._collectCommandRows();
-		this.nextCommandRowIndex = 0;
-		this._addBreakpointSupport();
-	}
+        this.headerRow = new TitleRow(this.testDocument.getElementsByTagName("tr")[0]);
+        this.commandRows = this._collectCommandRows();
+        this.nextCommandRowIndex = 0;
+        this._addBreakpointSupport();
     },
 
     _collectCommandRows: function () {
@@ -1196,31 +1159,6 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
         } else {
             this.currentRow.markDone();
         }
-		
-		if (this.currentCommand != null && this.currentCommand.command.indexOf("dumpTvScreenAndWait") > -1){	
-			LOG.warn ("Screenshot saved");
-		
-		 var now = new Date();
-        var annee   = now.getFullYear();
-        var mois    = ((now.getMonth() + 1)<10?'0':'') + (now.getMonth()+1);
-        var jour    = (now.getDate()<10?'0':'') + now.getDate();
-        var heure   = (now.getHours()<10?'0':'') + now.getHours();
-        var minute  = (now.getMinutes()<10?'0':'') + now.getMinutes();
-        var seconde = (now.getSeconds()<10?'0':'') + now.getSeconds();
-	var datetime = annee + mois + jour; // in order to avoid to have all files (screenshot, dom, stb log) in the same directory (request from : Olivier Etienne)
-        var datetime_string = annee + mois + jour + "_" + heure + minute + seconde;
-
-        var testSuiteName = this.getName(logTestSuiteName);
-        var testCaseName = this.getName(this.htmlTestCase.pathname);
-		
-			// Retrieve Screenshot
-			var pathScreenOnFailure = "/var/lib/jenkins/screenshotOnFailure" + datetime;
-			var domStr = pathScreenOnFailure + "/" + testSuiteName + "-" + testCaseName + "-" + datetime_string + "_DOM.html";
-			this.create_file(domStr, selenium.browserbot.getDocument().documentElement.outerHTML);
-					
-			//TODO integrate in report 
-			LOG.warn ("Screenshot available under <a href=\"http://10.185.111.250/selenium_screenshotOnFailure/displayScreenshotOnFailure.php?dateDir=" + datetime + "&failedTest=" + testSuiteName + "-" + testCaseName + "-" + datetime_string + "\">screenshot</a>");
-		}
     },
 
     _checkExpectedFailure : function(result) {
@@ -1260,6 +1198,24 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
 
     },
 
+	checkDirExists : function(path) {
+		var file = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
+		file.initWithPath(path);
+		if (file.exists()) {
+			return true;
+		} else {
+			return false;
+		}
+	},
+
+	create_folders : function(path, newFolder) {
+		var file = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
+		file.initWithPath(path);
+		file.append(newFolder);
+		file.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, 0777);
+		console.log(newFolder + " has been created");
+	},
+
 	create_file : function(filename,body) {
 	
         var file = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
@@ -1285,7 +1241,7 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
 	
     commandError : function(errorMessage) {
 
-		//console.log("coucou");
+	//console.log("coucou");
 	
         var now = new Date();
         var annee   = now.getFullYear();
@@ -1294,6 +1250,7 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
         var heure   = (now.getHours()<10?'0':'') + now.getHours();
         var minute  = (now.getMinutes()<10?'0':'') + now.getMinutes();
         var seconde = (now.getSeconds()<10?'0':'') + now.getSeconds();
+	var datetime = annee + mois + jour; // in order to avoid to have all files (screenshot, dom, stb log) in the same directory (request from : Olivier Etienne)
         var datetime_string = annee + mois + jour + "_" + heure + minute + seconde;
 
         var testSuiteName = this.getName(logTestSuiteName);
@@ -1301,28 +1258,34 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
 
         var testBaseURL = selenium.browserbot.baseUrl;
 
-		var pathScreenOnFailure = "/var/lib/jenkins/screenshotOnFailure";
+	var path = "/var/lib/jenkins/screenshotOnFailure/";
+	var pathScreenOnFailure = path + datetime;
         var fileStr = pathScreenOnFailure + "/" + testSuiteName + "-" + testCaseName + "-" + datetime_string + ".png";
-		var stbLogStr = pathScreenOnFailure + "/" + testSuiteName + "-" + testCaseName + "-" + datetime_string + ".txt";
-		var domStr = pathScreenOnFailure + "/" + testSuiteName + "-" + testCaseName + "-" + datetime_string + "_DOM.html";
+	var stbLogStr = pathScreenOnFailure + "/" + testSuiteName + "-" + testCaseName + "-" + datetime_string + ".txt";
+	var domStr = pathScreenOnFailure + "/" + testSuiteName + "-" + testCaseName + "-" + datetime_string + "DOM.html";
 
+	console.log("path => " + pathScreenOnFailure);
+
+	var isExist = this.checkDirExists(pathScreenOnFailure);
+
+	if (!isExist) {
+		// create datetime folder
+		this.create_folders(path, datetime);
+	}
 		
+	// perform capture screenshot
         selenium.doCaptureEntirePageScreenshot(fileStr);
-		this.create_file(domStr,selenium.browserbot.getDocument().documentElement.outerHTML);
+	this.create_file(domStr,selenium.browserbot.getDocument().documentElement.outerHTML);
 	
-		
-		try {
-			// Synchronous call to retrieve STB logs through associated pi
-			var xmlHttp = null;
-			xmlHttp = new XMLHttpRequest();
-			xmlHttp.open("GET", testBaseURL + "/StbGetLogs.php?mode=last", false);
-			xmlHttp.send(null);
-			var stbLogs = xmlHttp.responseText;
-			this.create_file(stbLogStr,stbLogs)		
-		}
-		catch (e){
-			LOG.warn("Unable to retrieve STB Logs");
-		}
+	// get stb logs
+	if ( testBaseURL.indexOf("rpitesttv")  > -1 ) {
+		var xmlHttp = null;
+		xmlHttp = new XMLHttpRequest();
+		xmlHttp.open("GET", testBaseURL + "/StbGetLogs.php?mode=last", false);
+		xmlHttp.send(null);
+		var stbLogs = xmlHttp.responseText;
+		this.create_file(stbLogStr,stbLogs)		
+	}
 
 		
         var tempResult = {};
@@ -1337,7 +1300,8 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
         }
 		
         errorMessage = tempResult.failureMessage;
-        var moreInformation = "<br><a href=\"http://10.185.111.250/selenium_screenshotOnFailure/displayScreenshotOnFailure.php?failedTest=" + testSuiteName + "-" + testCaseName + "-" + datetime_string + "\">more informations</a>";
+	// give an url to see the screenshot, dom and logs
+        var moreInformation = "<br><a href=\"http://10.185.111.250/selenium_screenshotOnFailure/displayScreenshotOnFailure.php?dateDir=" + datetime + "&failedTest=" + testSuiteName + "-" + testCaseName + "-" + datetime_string + "\">more informations</a>";
 				
         this.metrics.numCommandErrors += 1;
         this._recordFailure(errorMessage, moreInformation);
@@ -1469,7 +1433,8 @@ Selenium.prototype.assertSelected = function(selectLocator, optionLocator) {
      */
     var element = this.page().findElement(selectLocator);
     var locator = this.optionLocatorFactory.fromLocatorString(optionLocator);
-    if (element.selectedIndex == -1) {
+    if (element.selectedIndex == -1)
+    {
         Assert.fail("No option selected");
     }
     locator.assertSelected(element);
