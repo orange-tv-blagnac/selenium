@@ -18,7 +18,10 @@
 // An object representing the current test, used external
 var currentTest = null; // TODO: get rid of this global, which mirrors the htmlTestRunner.currentTest
 var selenium = null;
+
+// Global variables used to store 
 var logTestSuiteName = "unknow";
+var lastLogSentIndex = 0;
 
 var htmlTestRunner;
 var HtmlTestRunner = classCreate();
@@ -36,6 +39,93 @@ objectExtend(HtmlTestRunner.prototype, {
         }, this), 500);
     },
 
+	
+	_sendFailure: function (testSuiteName, testCaseName, datetime_string) {	
+		try {
+			var form = document.createElement("form");
+			document.body.appendChild(form);
+
+			form.id = "resultsForm";
+			form.method = "post";
+			form.target = "selenium_myiframe";
+
+			var resultsUrl = this.controlPanel.getResultsUrl();
+			if (!resultsUrl) {
+				resultsUrl = "./postResults";
+			}
+
+			var actionAndParameters = resultsUrl.split('?', 2);
+			form.action = actionAndParameters[0];
+
+			form.createHiddenField = function(name, value) {
+				input = document.createElement("input");
+				input.type = "hidden";
+				input.name = name;
+				input.value = value;
+				this.appendChild(input);
+			};
+
+			form.createHiddenField("storeCrashReports", ":)");
+			form.createHiddenField("crashReportsTestSuite", testSuiteName);
+			form.createHiddenField("crashReportsTestCase", testCaseName);
+			form.createHiddenField("crashReportsTimeStamp", datetime_string);
+
+			form.submit();
+
+			document.body.removeChild(form);
+		}
+		catch (e){
+			LOG.error("Unable to send error report. error :" + e.message);
+			console.log(e);
+		}
+    },
+	
+	_sendLogs: function () {	
+		var form = document.createElement("form");
+        document.body.appendChild(form);
+
+        form.id = "resultsForm";
+        form.method = "post";
+        form.target = "selenium_myiframe";
+
+        var resultsUrl = this.controlPanel.getResultsUrl();
+        if (!resultsUrl) {
+            resultsUrl = "./postResults";
+        }
+
+        var actionAndParameters = resultsUrl.split('?', 2);
+        form.action = actionAndParameters[0];
+        var resultsUrlQueryString = actionAndParameters[1];
+
+        form.createHiddenField = function(name, value) {
+            input = document.createElement("input");
+            input.type = "hidden";
+            input.name = name;
+            input.value = value;
+            this.appendChild(input);
+        };
+
+
+        var logMessages = [];
+        while (lastLogSentIndex < LOG.pendingMessages.length ) {
+            var msg = LOG.pendingMessages[lastLogSentIndex];			
+            logMessages.push(msg.type);
+            logMessages.push(": ");
+            logMessages.push(msg.msg);
+            logMessages.push('\n');
+			lastLogSentIndex++;
+        }
+
+        var logOutput = logMessages.join("");
+        form.createHiddenField("log", logOutput);
+		form.createHiddenField("logToConsole", ":)");
+
+        form.submit();
+
+        document.body.removeChild(form);
+        	
+    },
+	
     getTestSuite: function() {
         return suiteFrame.getCurrentTestSuite();
     },
@@ -60,7 +150,7 @@ objectExtend(HtmlTestRunner.prototype, {
                 setTimeout(fnBind(function() {
                     self.loadSuiteFrame();
                 }, this), 50);
-		console.log(e);
+				console.log(e);
                 return;
             }
 
@@ -74,7 +164,11 @@ objectExtend(HtmlTestRunner.prototype, {
         }
         self.controlPanel.setHighlightOption();
         var testSuiteName = self.controlPanel.getTestSuiteName();
-        logTestSuiteName = testSuiteName;
+        
+		//-------------
+		logTestSuiteName = testSuiteName;				
+		//-------------
+		
         if (testSuiteName) {
             suiteFrame.load(testSuiteName, function() {setTimeout(fnBind(self._onloadTestSuite, self), 50)} );
             selenium.browserbot.baseUrl = absolutify(testSuiteName, window.location.href);
@@ -689,7 +783,7 @@ objectExtend(HtmlTestSuite.prototype, {
     _startCurrentTestCase: function() {
         this.getCurrentRow().loadTestCase(fnBind(htmlTestRunner.startTest, htmlTestRunner));
     },
-
+	
     _onTestSuiteComplete: function() {
         this.markDone();
         new SeleniumTestResult(this.failed, this.getTestTable()).post();
@@ -856,11 +950,10 @@ objectExtend(SeleniumTestResult.prototype, {
                 styles = xhr.responseText;
             }
         } catch (e) {
-		console.log(e);
-	}
+			console.log(e);
+		}
 
         var scriptFile = objFSO.CreateTextFile(fileName);
-
 
         scriptFile.WriteLine("<html><head><title>Test suite results</title><style>");
         scriptFile.WriteLine(styles);
@@ -910,43 +1003,43 @@ objectExtend(HtmlTestCase.prototype, {
                 this.pathname = this.testWindow.location.pathname;
             }
         } catch (e) {
-		console.log(e);
-	}
+			console.log(e);
+		}
 
         this.htmlTestSuiteRow = htmlTestSuiteRow;
 
 
-	if (this.testDocument.getElementsByTagName("tr").length == 0){
-	   
-	    //------ FAKE HEADER --------
-	    var fakeHeader = this.testDocument.createElement("tr");
-	    var fakeTitle = this.testDocument.createElement("td");
-	    fakeTitle.appendChild(this.testDocument.createTextNode("EMPTY DOCUMENT :'( "));
-	    fakeHeader.appendChild(fakeTitle);
-	    this.headerRow = new TitleRow(fakeHeader);
+		if (this.testDocument.getElementsByTagName("tr").length == 0){
+		   
+			//------ FAKE HEADER --------
+			var fakeHeader = this.testDocument.createElement("tr");
+			var fakeTitle = this.testDocument.createElement("td");
+			fakeTitle.appendChild(this.testDocument.createTextNode("EMPTY DOCUMENT :'( "));
+			fakeHeader.appendChild(fakeTitle);
+			this.headerRow = new TitleRow(fakeHeader);
 
-	    // -------- FAKE ROW ----
-            this.commandRows = [];
-	    var fakeElement = this.testDocument.createElement("tr");
-	    var fakeTD1 = this.testDocument.createElement("td");
-	    fakeTD1.appendChild(this.testDocument.createTextNode("assertEval"));
-	    var fakeTD2 = this.testDocument.createElement("td");
-	    fakeTD2.appendChild(this.testDocument.createTextNode("false"));
-	    var fakeTD3 = this.testDocument.createElement("td");
-	    fakeTD3.appendChild(this.testDocument.createTextNode("true"));
-	    fakeElement.appendChild(fakeTD1);
-	    fakeElement.appendChild(fakeTD2);
-	    fakeElement.appendChild(fakeTD3);
-	    this.commandRows.push(new HtmlTestCaseRow(fakeElement));
+			// -------- FAKE ROW ----
+				this.commandRows = [];
+			var fakeElement = this.testDocument.createElement("tr");
+			var fakeTD1 = this.testDocument.createElement("td");
+			fakeTD1.appendChild(this.testDocument.createTextNode("assertEval"));
+			var fakeTD2 = this.testDocument.createElement("td");
+			fakeTD2.appendChild(this.testDocument.createTextNode("false"));
+			var fakeTD3 = this.testDocument.createElement("td");
+			fakeTD3.appendChild(this.testDocument.createTextNode("true"));
+			fakeElement.appendChild(fakeTD1);
+			fakeElement.appendChild(fakeTD2);
+			fakeElement.appendChild(fakeTD3);
+			this.commandRows.push(new HtmlTestCaseRow(fakeElement));
 
-	    this.nextCommandRowIndex = 0;            
-	}
-	else {
-		this.headerRow = new TitleRow(this.testDocument.getElementsByTagName("tr")[0]);
-		this.commandRows = this._collectCommandRows();
-		this.nextCommandRowIndex = 0;
-		this._addBreakpointSupport();
-	}
+			this.nextCommandRowIndex = 0;            
+		}
+		else {
+			this.headerRow = new TitleRow(this.testDocument.getElementsByTagName("tr")[0]);
+			this.commandRows = this._collectCommandRows();
+			this.nextCommandRowIndex = 0;
+			this._addBreakpointSupport();
+		}
     },
 
     _collectCommandRows: function () {
@@ -1144,7 +1237,7 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
         this.metrics = metrics;
 
         this.htmlTestCase = htmlTestCase;
-        LOG.info("Starting test " + htmlTestCase.pathname);
+        LOG.info("***** Starting test " + htmlTestCase.pathname + " *****");
 
         this.currentRow = null;
         this.currentRowIndex = 0;
@@ -1197,28 +1290,49 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
             this.currentRow.markDone();
         }
 		
-		if (this.currentCommand != null && this.currentCommand.command.indexOf("dumpTvScreenAndWait") > -1){	
-			LOG.warn ("Screenshot saved");
+		try {			
+			htmlTestRunner._sendLogs();		
+		} catch(e){
+			LOG.error("Unable to send logs : " + e.message);
+			console.log(e);
+		}		
 		
-		 var now = new Date();
-        var annee   = now.getFullYear();
-        var mois    = ((now.getMonth() + 1)<10?'0':'') + (now.getMonth()+1);
-        var jour    = (now.getDate()<10?'0':'') + now.getDate();
-        var heure   = (now.getHours()<10?'0':'') + now.getHours();
-        var minute  = (now.getMinutes()<10?'0':'') + now.getMinutes();
-        var seconde = (now.getSeconds()<10?'0':'') + now.getSeconds();
-        var datetime_string = annee + mois + jour + "_" + heure + minute + seconde;
+		if (this.currentCommand != null && this.currentCommand.command.indexOf("dumpTvScreen") > -1){	
+			try {
+				var now = new Date();
+				var annee   = now.getFullYear();
+				var mois    = ((now.getMonth() + 1)<10?'0':'') + (now.getMonth()+1);
+				var jour    = (now.getDate()<10?'0':'') + now.getDate();
+				var heure   = (now.getHours()<10?'0':'') + now.getHours();
+				var minute  = (now.getMinutes()<10?'0':'') + now.getMinutes();
+				var seconde = (now.getSeconds()<10?'0':'') + now.getSeconds();
+				var datetime_string = annee + mois + jour + "_" + heure + minute + seconde;
+				var datetime = "" + annee + mois + jour;
+				var testSuiteName = this.getName(logTestSuiteName);
+				var testCaseName = this.getName(this.htmlTestCase.pathname);
+			
+				// Retrieve Screenshot
+				var path = "/tmp/screenshotOnFailure/";
+				var pathScreenOnFailure = path + datetime;
+				var domFileName = datetime_string + "-" + testSuiteName + "-" + testCaseName + "_DOM.html";
+				var domStr = pathScreenOnFailure + "/" + domFileName;
+				
+				var isExist = this.checkDirExists(pathScreenOnFailure);
 
-        var testSuiteName = this.getName(logTestSuiteName);
-        var testCaseName = this.getName(this.htmlTestCase.pathname);
-		
-			// Retrieve Screenshot
-			var pathScreenOnFailure = "/var/lib/jenkins/screenshotOnFailure";
-			var domStr = pathScreenOnFailure + "/" + testSuiteName + "-" + testCaseName + "-" + datetime_string + "_DOM.html";
-			this.create_file(domStr, selenium.browserbot.getDocument().documentElement.outerHTML);
-					
-			//TODO integrate in report 
-			LOG.warn ("Screenshot available under <a href=\"http://10.185.111.250/selenium_screenshotOnFailure/displayScreenshotOnFailure.php?failedTest=" + testSuiteName + "-" + testCaseName + "-" + datetime_string + "\">screenshot</a>");
+				if (!isExist) {
+					// create datetime folder
+					this.create_folders(path, datetime);
+				}
+				
+				this.create_file(domStr, selenium.browserbot.getDocument().documentElement.outerHTML);
+						
+				LOG.info ("Screenshot available under " + domFileName + " into workspace");
+				
+				htmlTestRunner._sendFailure(testSuiteName, testCaseName, datetime_string);				
+			}catch(e){
+				LOG.error("Unable to store screenshot in " + pathScreenOnFailure + " error:" + e.message);
+				console.log(e);
+			}
 		}
     },
 
@@ -1242,7 +1356,7 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
                         result.failed = true;
                         result.failureMessage = "Expected "+this.expectedFailureType+", but "+failureType+" occurred instead";
                     }
-                } else {
+                } else {w
                     result.failed = true;
                     result.failureMessage = "Expected " + this.expectedFailureType + " message '" + this.expectedFailure
                         + "' but was '" + result.failureMessage + "'";
@@ -1256,9 +1370,26 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
     getName : function(path) {
         var filename = path.substring(path.lastIndexOf('/')+1);
         return filename.substr(0,filename.lastIndexOf(".")).replace(/([^A-Za-z0-9]+)/gi,'_');
-
     },
 
+	checkDirExists : function(path) {
+		var file = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
+		file.initWithPath(path);
+		if (file.exists()) {
+			return true;
+		} else {
+			return false;
+		}
+	},
+
+	create_folders : function(path, newFolder) {
+		var file = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
+		file.initWithPath(path);
+		file.append(newFolder);
+		file.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, 0777);
+		console.log(newFolder + " has been created");
+	},
+	
 	create_file : function(filename,body) {
 	
         var file = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
@@ -1284,8 +1415,6 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
 	
     commandError : function(errorMessage) {
 
-		//console.log("coucou");
-	
         var now = new Date();
         var annee   = now.getFullYear();
         var mois    = ((now.getMonth() + 1)<10?'0':'') + (now.getMonth()+1);
@@ -1293,6 +1422,8 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
         var heure   = (now.getHours()<10?'0':'') + now.getHours();
         var minute  = (now.getMinutes()<10?'0':'') + now.getMinutes();
         var seconde = (now.getSeconds()<10?'0':'') + now.getSeconds();
+
+		var dateDir= "" + annee + mois + jour;
         var datetime_string = annee + mois + jour + "_" + heure + minute + seconde;
 
         var testSuiteName = this.getName(logTestSuiteName);
@@ -1300,13 +1431,23 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
 
         var testBaseURL = selenium.browserbot.baseUrl;
 
-		var pathScreenOnFailure = "/var/lib/jenkins/screenshotOnFailure";
-        var fileStr = pathScreenOnFailure + "/" + testSuiteName + "-" + testCaseName + "-" + datetime_string + ".png";
-		var stbLogStr = pathScreenOnFailure + "/" + testSuiteName + "-" + testCaseName + "-" + datetime_string + ".txt";
-		var domStr = pathScreenOnFailure + "/" + testSuiteName + "-" + testCaseName + "-" + datetime_string + "_DOM.html";
+		var path = "/tmp/screenshotOnFailure/";
+		var pathScreenOnFailure = path + dateDir;
+		var pngFileName = datetime_string + "-" + testSuiteName + "-" + testCaseName + ".png";
+		var logFileName = datetime_string + "-" + testSuiteName + "-" + testCaseName + ".txt";
+		var domFileName = datetime_string + "-" + testSuiteName + "-" + testCaseName + "_DOM.html";
+        var imgFileStr = pathScreenOnFailure + "/" + pngFileName;
+		var stbLogStr = pathScreenOnFailure + "/" + logFileName;
+		var domStr = pathScreenOnFailure + "/" + domFileName;
 
+		var isExist = this.checkDirExists(pathScreenOnFailure);
+
+		if (!isExist) {
+			// create datetime folder
+			this.create_folders(path, dateDir);
+		}
 		
-        selenium.doCaptureEntirePageScreenshot(fileStr);
+        selenium.doCaptureEntirePageScreenshot(imgFileStr);
 		this.create_file(domStr,selenium.browserbot.getDocument().documentElement.outerHTML);
 	
 		
@@ -1314,7 +1455,7 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
 			// Synchronous call to retrieve STB logs through associated pi
 			var xmlHttp = null;
 			xmlHttp = new XMLHttpRequest();
-			xmlHttp.open("GET", testBaseURL + "/StbGetLogs.php?mode=last", false);
+			xmlHttp.open("GET", testBaseURL + "/StbGetLogs.php?logMode=last", false);
 			xmlHttp.send(null);
 			var stbLogs = xmlHttp.responseText;
 			this.create_file(stbLogStr,stbLogs)		
@@ -1335,15 +1476,19 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
             return true;
         }
 		
-        errorMessage = tempResult.failureMessage;
-        var moreInformation = "<br><a href=\"http://10.185.111.250/selenium_screenshotOnFailure/displayScreenshotOnFailure.php?failedTest=" + testSuiteName + "-" + testCaseName + "-" + datetime_string + "\">more informations</a>";
-				
+		htmlTestRunner._sendFailure(testSuiteName, testCaseName, datetime_string);
+	
+		var moreInformation = "<br>";				
+		moreInformation = moreInformation + "<a href='./" + pngFileName + "'><img height='40' width='50' src='" + pngFileName + "'></a><br>";		
+		moreInformation = moreInformation + "<a href='./" + pngFileName + "'>[IMG]</a> ";		
+		moreInformation = moreInformation + "<a href='./" + domFileName + "'>[DOM]</a> ";
+		moreInformation = moreInformation + "<a href='./" + logFileName + "'>[LOGS]</a>";
+		
         this.metrics.numCommandErrors += 1;
         this._recordFailure(errorMessage, moreInformation);
     },
 
     _recordFailure : function(errorMsg, moreInformations) {
-        LOG.warn("currentTest.recordFailure: " + errorMsg);
         htmlTestRunner.markFailed();
         this.htmlTestCase.addErrorMessage(errorMsg, this.currentRow, moreInformations);
     },
@@ -1503,4 +1648,5 @@ Selenium.prototype.assertErrorOnNext = function(message) {
     currentTest.expectedFailureType = "error";
     currentTest.expectedFailureJustSet = true;
 };
+
 

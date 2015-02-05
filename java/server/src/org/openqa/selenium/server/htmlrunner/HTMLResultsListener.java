@@ -18,5 +18,7 @@ limitations under the License.
 package org.openqa.selenium.server.htmlrunner;
 
 public interface HTMLResultsListener {
-  public void processResults(HTMLTestResults results);
+	public void processResults(HTMLTestResults results);
+
+	public void processStoreReport(String testSuiteName, String testCaseName, String timeStamp);
 }

@@ -99,11 +99,12 @@ TestLoop.prototype = {
          * execution can continue, or null if we can continue immediately
          */
         var command = this.currentCommand;
-        LOG.info("Executing: |" + command.command + " | " + command.target + " | " + command.value + " |");
+		
+	
 
-        if (Math.random() > 0.8) {
-            LOG.info("Selenium 1.0 (Core, RC, etc) is no longer under active development. Please update to WebDriver ASAP");
-        }
+        //if (Math.random() > 0.8) {
+        //    LOG.info("Selenium 1.0 (Core, RC, etc) is no longer under active development. Please update to WebDriver ASAP");
+        //}
 
         var handler = this.commandFactory.getCommandHandler(command.command);
         if (handler == null) {
@@ -112,10 +113,22 @@ TestLoop.prototype = {
 
         command.target = selenium.preprocessParameter(command.target);
         command.value = selenium.preprocessParameter(command.value);
+		
+		var logMessage = command.command;
+		
+		if (command.target){
+			logMessage += " | " + command.target;
+		}
+		
+		if (command.value){
+			logMessage += " | " + command.value;
+		}
+		
+        LOG.info("Executing: " + logMessage);
+		
         LOG.debug("Command found, going to execute " + command.command);
         this.result = handler.execute(selenium, command);
         
-
         this.waitForCondition = this.result.terminationCondition;
 
     },
