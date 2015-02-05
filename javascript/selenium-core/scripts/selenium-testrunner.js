@@ -1627,6 +1627,7 @@ Selenium.prototype.assertFailureOnNext = function(message) {
     if (!message) {
         throw new SeleniumError("Message must be provided");
     }
+    
 
     currentTest.expectedFailure = message;
     currentTest.expectedFailureType = "failure";
