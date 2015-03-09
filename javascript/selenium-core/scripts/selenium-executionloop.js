@@ -126,6 +126,14 @@ TestLoop.prototype = {
 		
         LOG.info("Executing: " + logMessage);
 		
+		try {
+			// Push logs immediatly to know wich command is running
+			htmlTestRunner._sendLogs();		
+		} catch(e){
+			LOG.error("Unable to send logs : " + e.message);
+			console.log(e);
+		}		
+		
         LOG.debug("Command found, going to execute " + command.command);
         this.result = handler.execute(selenium, command);
         

@@ -41,13 +41,14 @@ objectExtend(HtmlTestRunner.prototype, {
 
 	
 	_sendFailure: function (testSuiteName, testCaseName, datetime_string) {	
+		//LOG.info ("Sending report to server ");				
 		try {
 			var form = document.createElement("form");
 			document.body.appendChild(form);
 
-			form.id = "resultsForm";
+			form.id = "resultsForm-report-" + new Date().getTime();
 			form.method = "post";
-			form.target = "selenium_myiframe";
+			form.target = "selenium_reportiframe";
 
 			var resultsUrl = this.controlPanel.getResultsUrl();
 			if (!resultsUrl) {
@@ -56,7 +57,8 @@ objectExtend(HtmlTestRunner.prototype, {
 
 			var actionAndParameters = resultsUrl.split('?', 2);
 			form.action = actionAndParameters[0];
-
+		
+			
 			form.createHiddenField = function(name, value) {
 				input = document.createElement("input");
 				input.type = "hidden";
@@ -71,22 +73,23 @@ objectExtend(HtmlTestRunner.prototype, {
 			form.createHiddenField("crashReportsTimeStamp", datetime_string);
 
 			form.submit();
-
+			
 			document.body.removeChild(form);
 		}
 		catch (e){
 			LOG.error("Unable to send error report. error :" + e.message);
 			console.log(e);
-		}
+		}		
     },
 	
 	_sendLogs: function () {	
+		//LOG.info ("Sending logs to server ");		
 		var form = document.createElement("form");
         document.body.appendChild(form);
 
-        form.id = "resultsForm";
+        form.id = "resultsForm-logs" + new Date().getTime();
         form.method = "post";
-        form.target = "selenium_myiframe";
+        form.target = "selenium_logiframe";
 
         var resultsUrl = this.controlPanel.getResultsUrl();
         if (!resultsUrl) {
@@ -1314,25 +1317,41 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
 				// Retrieve Screenshot
 				var path = "/tmp/screenshotOnFailure/";
 				var pathScreenOnFailure = path + datetime;
+				var pngFileName = datetime_string + "-" + testSuiteName + "-" + testCaseName + ".png";
 				var domFileName = datetime_string + "-" + testSuiteName + "-" + testCaseName + "_DOM.html";
-				var domStr = pathScreenOnFailure + "/" + domFileName;
-				
+				var domStr = pathScreenOnFailure + "/" + domFileName;				
 				var isExist = this.checkDirExists(pathScreenOnFailure);
 
+				var imgFileStr = pathScreenOnFailure + "/" + pngFileName;
+				
 				if (!isExist) {
 					// create datetime folder
 					this.create_folders(path, datetime);
 				}
 				
+				// Image screenschot
+				LOG.info ("Saving screenshot to " + imgFileStr);
+				selenium.doCaptureEntirePageScreenshot(imgFileStr);
+				
+				LOG.info ("Saving HTML to " + domStr);
 				this.create_file(domStr, selenium.browserbot.getDocument().documentElement.outerHTML);
 						
-				LOG.info ("Screenshot available under " + domFileName + " into workspace");
+				LOG.info ("Screenshot available under " + domFileName + " into workspace");				
+				htmlTestRunner._sendFailure(testSuiteName, testCaseName, datetime_string);
 				
-				htmlTestRunner._sendFailure(testSuiteName, testCaseName, datetime_string);				
+				var moreInformation = "<br>";				
+				moreInformation = moreInformation + "<a href='./" + pngFileName + "'><img height='40' width='50' src='" + pngFileName + "'></a><br>";		
+				moreInformation = moreInformation + "<a href='./" + pngFileName + "'>[IMG]</a> ";		
+				moreInformation = moreInformation + "<a href='./" + domFileName + "'>[DOM]</a> ";
+				
+				this.currentRow.setMessage(moreInformation);
+				
 			}catch(e){
 				LOG.error("Unable to store screenshot in " + pathScreenOnFailure + " error:" + e.message);
 				console.log(e);
 			}
+			
+
 		}
     },
 
@@ -1387,7 +1406,7 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
 		file.initWithPath(path);
 		file.append(newFolder);
 		file.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, 0777);
-		console.log(newFolder + " has been created");
+		LOG.info(newFolder + " has been created");
 	},
 	
 	create_file : function(filename,body) {
