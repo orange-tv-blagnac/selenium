@@ -90,6 +90,7 @@ public class SeleniumHTMLRunnerResultsHandler implements HttpHandler {
 
 	public void handle(String pathInContext, String pathParams, HttpRequest request, HttpResponse res)
 			throws HttpException, IOException {
+
 		if (!"/postResults".equals(pathInContext))
 			return;
 
@@ -99,23 +100,24 @@ public class SeleniumHTMLRunnerResultsHandler implements HttpHandler {
 		String storeCrashReports = request.getParameter("storeCrashReports");
 
 		if (logToConsole != null && !"".equals(logToConsole)) {
-
+			// log.info("Received log request");
 			String[] lines = postedLog.split("\n");
 			for (String line : lines) {
 				// line = line.replaceAll("__SERVERIP__", serverExternalIp);
+				if ((line != null) && (line.trim().length() > 0)) {
+					Level level = Level.INFO;
 
-				Level level = Level.INFO;
-
-				if (line.indexOf("info: ") != -1) {
-					line = line.replaceAll("info: ", "");
-					level = Level.INFO;
-				} else if (line.indexOf("warn: ") != -1) {
-					line = line.replaceAll("warn: ", "");
-					level = Level.WARNING;
-				} else if (line.indexOf("error: ") != -1) {
-					level = Level.SEVERE;
+					if (line.indexOf("info: ") != -1) {
+						line = line.replaceAll("info: ", "");
+						level = Level.INFO;
+					} else if (line.indexOf("warn: ") != -1) {
+						line = line.replaceAll("warn: ", "");
+						level = Level.WARNING;
+					} else if (line.indexOf("error: ") != -1) {
+						level = Level.SEVERE;
+					}
+					log.log(level, line);
 				}
-				log.log(level, line);
 
 			}
 
@@ -124,6 +126,7 @@ public class SeleniumHTMLRunnerResultsHandler implements HttpHandler {
 			Writer writer = new OutputStreamWriter(out, StringUtil.__ISO_8859_1);
 			writer.write("OK");
 		} else if (storeCrashReports != null && !"".equals(storeCrashReports)) {
+			log.info("Received store request");
 			String testSuiteName = request.getParameter("crashReportsTestSuite");
 			String testCaseName = request.getParameter("crashReportsTestCase");
 			String timeStamp = request.getParameter("crashReportsTimeStamp");
