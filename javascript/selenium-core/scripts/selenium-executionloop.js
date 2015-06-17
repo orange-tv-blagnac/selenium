@@ -100,12 +100,6 @@ TestLoop.prototype = {
          */
         var command = this.currentCommand;
 		
-	
-
-        //if (Math.random() > 0.8) {
-        //    LOG.info("Selenium 1.0 (Core, RC, etc) is no longer under active development. Please update to WebDriver ASAP");
-        //}
-
         var handler = this.commandFactory.getCommandHandler(command.command);
         if (handler == null) {
             throw new SeleniumError("Unknown command: '" + command.command + "'");
