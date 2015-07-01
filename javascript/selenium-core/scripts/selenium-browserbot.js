@@ -111,24 +111,33 @@ var BrowserBot = function(topLevelApplicationWindow) {
             this.pageLoadError = null;
             throw e;
         }
-
+		
         if (self.ignoreResponseCode) {
             return self.newPageLoaded;
-        } else {
-            if (self.isXhrSent && self.isXhrDone) {
-                if (!((self.xhrResponseCode >= 200 && self.xhrResponseCode <= 399) || self.xhrResponseCode == 0)) {
+        } else {		
+            LOG.debug ("isNewPageLoaded xhrBisDone:" +  self.isXhrBisDone);
+			
+			if (self.isXhrBisDone) {
+						
+				LOG.debug ("GET xhrBisResponseCode" + self.xhrBisResponseCode);
+				if (!((self.xhrBisResponseCode >= 200 && self.xhrBisResponseCode <= 399) || self.xhrBisResponseCode == 0)) {
                      // TODO: for IE status like: 12002, 12007, ... provide corresponding statusText messages also.
-                     LOG.error("XHR failed with message " + self.xhrStatusText);
-                     e = "XHR ERROR: URL = " + self.xhrOpenLocation + " Response_Code = " + self.xhrResponseCode + " Error_Message = " + self.xhrStatusText;
-                     self.abortXhr = false;
-                     self.isXhrSent = false;
-                     self.isXhrDone = false;
-                     self.xhrResponseCode = null;
-                     self.xhrStatusText = null;
+                     LOG.error("Loading page failed with message " + self.xhrBisStatusText);
+                     e = "XHR ERROR: URL = " + self.xhrBisOpenLocation + " Response_Code = " + self.xhrBisResponseCode + " Error_Message = " + self.xhrBisStatusText;
+                     self.abortXhrBis = false;
+                     self.isXhrBisSent = false;
+                     self.isXhrBisDone = false;
+                     self.xhrBisResponseCode = null;
+                     self.xhrBisStatusText = null;
                      throw new SeleniumError(e);
                 }
+				
            }
-          return self.newPageLoaded && (self.isXhrSent ? (self.abortXhr || self.isXhrDone) : true); 
+		   //LOG.info ("isNewPageLoaded :" + self.newPageLoaded  + " " + self.isXhrSent + " " + self.abortXhr + " " + self.isXhrDone );
+		   //LOG.info ("isNewPageLoaded :" + self.isXhrBisSent + " " + self.abortXhrBis + " " + self.isXhrBisDone);
+		   //LOG.info ("isNewPageLoaded :" + (self.newPageLoaded && (self.isXhrSent ? (self.abortXhr || self.isXhrDone) : true) && (self.isXhrBisSent ? (self.abortXhrBis || self.isXhrBisDone) : true)));
+		   
+           return self.newPageLoaded &&  (self.isXhrBisSent ? (self.abortXhrBis || self.isXhrBisDone) : true); 
         }
     };
     
@@ -587,11 +596,17 @@ BrowserBot.prototype.abortXhrRequest = function() {
             this.abortXhr = true;
             this.xhr.abort();
         }
+		
+		if (this.abortXhrBis == false && this.isXhrBisSent && !this.isXhrBisDone) {
+            LOG.info("abortXhrBisRequest(): aborting request");
+            this.abortXhrBis = true;
+            this.xhrBis.abort();
+        }
     }
 };
 
 BrowserBot.prototype.onXhrStateChange = function(method) {
-      LOG.info("onXhrStateChange(): xhr.readyState = " + this.xhr.readyState + " method = " + method + " time = " + new Date().getTime());
+      LOG.debug("onXhrStateChange(): xhr.readyState = " + this.xhr.readyState + " method = " + method + " time = " + new Date().getTime());
       if (this.xhr.readyState == 4) {
 
           // check if the request got aborted.
@@ -623,6 +638,7 @@ BrowserBot.prototype.onXhrStateChange = function(method) {
     	      this.xhrStatusText = "Request Error";
           }
 
+		  //LOG.info("BrowserBot->onXhrStateChange() : isXhrDone = true");
           this.isXhrDone = true;
       }
 };
@@ -646,14 +662,102 @@ BrowserBot.prototype.checkedOpen = function(target) {
     this.isXhrSent = true;
 };
 
+BrowserBot.prototype.onXhrBisStateChange = function(method) {
+      LOG.debug("onXhrBisStateChange(): xhrBis.readyState = " + this.xhrBis.readyState + " method = " + method + " time = " + new Date().getTime());
+      if (this.xhrBis.readyState == 4) {
+
+          // check if the request got aborted.
+		  
+          if (this.abortXhrBis == true) {
+              this.xhrBisResponseCode = 0;
+              this.xhrBisStatusText = "Request Aborted";
+              this.isXhrBisDone = true;
+              return;
+          }
+		  
+
+          try {
+              this.xhrBisResponseCode = this.xhrBis.status;
+              this.xhrBisStatusText = this.xhrBis.statusText;
+			  var win = this.getCurrentWindow();
+			  
+			  //LOG.debug("response = " + this.xhrBis.responseText);
+			  LOG.debug("status   = " + this.xhrBis.status );
+			  LOG.debug(this.xhrBis);
+			  	
+			  if (!((this.xhrBisResponseCode >= 200 && this.xhrBisResponseCode <= 399) || this.xhrBisResponseCode == 0)) {
+                    // TODO: for IE status like: 12002, 12007, ... provide corresponding statusText messages also.
+                    LOG.error("XHR failed with code "  + this.xhrBisResponseCode + " -  message : "  + this.xhrBisStatusText);
+					win.document.body.innerHTML = "HTTP Request failed.  ERROR Code = " + this.xhrBisResponseCode + " - message : "  + this.xhrBisStatusText + "<br>" + this.xhrBis.responseText;
+               }
+			   else {
+					LOG.info("XHR success (" + this.xhrBisOpenLocation + ") ");										
+					respTxt = this.xhrBis.responseText.replace("<head>", "<head><base href='" + this.xhrBisOpenLocation + "' >");					
+					win.document.documentElement.innerHTML = respTxt;						
+			   }
+			
+			   //win.document.write(this.xhrBis.responseText);
+			   this.newPageLoaded = true;
+			   this.isXhrBisDone = true;
+			   this.xhrBis = {};
+			
+          } catch (ex) {
+			  console.exception(ex);
+              LOG.error("encountered exception while reading xhrBisResponseCode. " + ex.message);
+              this.xhrBisResponseCode = -1;
+    	      this.xhrBisStatusText = "Request Error";
+          }
+          
+      }
+};
+
+BrowserBot.prototype.openXHRBis = function(target) {
+    var url = absolutify(target, this.baseUrl);
+    LOG.debug("openXHRBis(): url = " + url);
+    this.isXhrBisDone = false;
+    this.abortXhrBis = false;
+    this.xhrBisResponseCode = null;
+    this.xhrBisOpenLocation = url;
+    try {
+        this.xhrBis = XmlHttp.create();
+    } catch (ex) {
+        LOG.error("Your browser doesnt support Xml Http Request");
+        return;
+    }
+    this.xhrBis.onreadystatechange =  this.onXhrBisStateChange.bind(this, "GET");
+    this.xhrBis.open("GET", url, true);
+    this.xhrBis.send("nop");
+    this.isXhrBisSent = true;
+};
+
+BrowserBot.prototype.openXHR = function(target) {
+    var url = absolutify(target, this.baseUrl);
+    LOG.debug("openXHR(): url = " + url);
+    this.isXhrDone = false;
+    this.abortXhr = false;
+    this.xhrResponseCode = null;
+    this.xhrOpenLocation = url;
+    try {
+        this.xhr = XmlHttp.create();
+    } catch (ex) {
+        LOG.error("Your browser doesnt support Xml Http Request");
+        return;
+    }
+    this.xhr.onreadystatechange =  this.onXhrStateChange.bind(this, "HEAD");
+    this.xhr.open("GET", url, true);
+    this.xhr.send("");
+    this.isXhrSent = true;
+};
+
 BrowserBot.prototype.openLocation = function(target) {
     // We're moving to a new page - clear the current one
     var win = this.getCurrentWindow();
     LOG.debug("openLocation newPageLoaded = false");
     this.newPageLoaded = false;
-    if (!this.ignoreResponseCode) {
-        this.checkedOpen(target);
-    }
+	// Skip Useless HEAD requests
+    //if (!this.ignoreResponseCode) {
+    //    this.checkedOpen(target);
+    //}
     this.setOpenLocation(win, target);
 };
 
@@ -689,7 +793,12 @@ BrowserBot.prototype.setOpenLocation = function(win, loc) {
         } catch (e) {} // DGF don't know why, but this often fails
     } else {
         try {
-            win.location.href = loc;
+            // (old way to load page) 
+			// win.location.href = loc;
+			
+			// New way to load page and retrieve HTTP Status
+			this.openXHRBis(loc);
+			
         } catch (err) {
             //Samit: Fix: SeleniumIDE under Firefox 4 breaks if you try to open chrome URL on (XPCNativeWrapper) unwrapped window objects
             if (err.name && err.name == "NS_ERROR_FAILURE") {
