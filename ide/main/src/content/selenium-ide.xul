@@ -30,7 +30,7 @@ limitations under the License.
 %seleniumIdeDTD;
 ]>
 
-<window title="&selenium-ide.standalone.title;"
+<window title="&selenium-ide.standalone.title; - Orange custo :)"
   id="selenium-ide"
   windowtype="global:selenium-ide"
   xmlns:html="http://www.w3.org/1999/xhtml"
