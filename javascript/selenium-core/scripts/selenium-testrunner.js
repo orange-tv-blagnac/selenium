@@ -142,10 +142,13 @@ objectExtend(HtmlTestRunner.prototype, {
         var logLevel = this.controlPanel.getDefaultLogLevel();
         if (logLevel) {
             LOG.setLogLevelThreshold(logLevel);
-        }
-
+        }		
+		
+		LOG.info("v" + Selenium.version + Selenium.revision + "-orange-custo rocks ! 1");
+		
         var self = this;
-        if (selenium == null) {
+        if (selenium == null) {			
+			
             var appWindow = self._getApplicationWindow();
             try { appWindow.location; }
             catch (e) {
@@ -167,7 +170,30 @@ objectExtend(HtmlTestRunner.prototype, {
         }
         self.controlPanel.setHighlightOption();
         var testSuiteName = self.controlPanel.getTestSuiteName();
-        
+        		
+
+		try {
+			posSlash = testSuiteName.lastIndexOf("/");
+			if (posSlash < 0){
+				posSlash = 0;
+			}
+			shortSuiteName = testSuiteName.substring(posSlash);
+
+		    var logStbMsg = '^J.%%%%%%.%%%%%%..%%%%..%%%%%%....^J...%%...%%.....%%.......%%......^J...%%...%%%%....%%%%....%%......^J...%%...%%.........%%...%%......^J...%%...%%%%%%..%%%%....%%......^J';	
+			logStbMsg += "...Test Suite : " + shortSuiteName + " /!\\ ^J................................^J";
+
+			var logURL = self.controlPanel.getBaseUrl() + "/StbRunCommand.php?fireAndForget=true&retrieveStdout=false&command=: %27" + logStbMsg + "%27";
+			
+			var xhrReq = XmlHttp.create();			
+			xhrReq.open("GET", logURL, true);
+			xhrReq.setRequestHeader("Content-Type", "text/html; charset=utf-8");
+			xhrReq.send("nop");
+		} catch (ex) {
+			LOG.error("Your browser doesnt support Xml Http Request" + ex);		
+		}
+    
+		
+
 		//-------------
 		logTestSuiteName = testSuiteName;				
 		//-------------
@@ -197,7 +223,7 @@ objectExtend(HtmlTestRunner.prototype, {
         return this.appWindow;
     },
 
-    _onloadTestSuite:function () {
+    _onloadTestSuite:function () {		
         suiteFrame = new HtmlTestSuiteFrame(getSuiteFrame());
         if (! this.getTestSuite().isAvailable()) {
             return;
@@ -230,6 +256,7 @@ objectExtend(HtmlTestRunner.prototype, {
     },
 
     startTestSuite: function() {
+		
         storedVars = new Object();
         storedVars.nbsp = String.fromCharCode(160);
         storedVars.space = ' ';
@@ -255,7 +282,7 @@ objectExtend(HtmlTestRunner.prototype, {
         this.testFailed = false;
         this.currentTest = new HtmlRunnerTestLoop(testFrame.getCurrentTestCase(), this.metrics, this.commandFactory);
 
-        currentTest = this.currentTest;
+        currentTest = this.currentTest;		
         this.currentTest.start();
     },
 
@@ -427,6 +454,7 @@ objectExtend(HtmlTestRunnerControlPanel.prototype, {
         this.stepButton.onclick = fnBindAsEventListener(this.stepCurrentTest, this);
 
 
+
         this.speedController = new Control.Slider('speedHandle', 'speedTrack', {
             range: $R(0, 1000),
             onSlide: fnBindAsEventListener(this.setRunInterval, this),
@@ -535,6 +563,7 @@ objectExtend(HtmlTestRunnerControlPanel.prototype, {
         }
     }
 
+
 });
 
 var AbstractResultAwareRow = classCreate();
@@ -572,6 +601,7 @@ objectExtend(AbstractResultAwareRow.prototype, {
     markFailed: function() {
         this.setStatus("failed");
     }
+
 
 });
 
@@ -679,7 +709,7 @@ objectExtend(HtmlTestSuiteRow.prototype, {
             if (onloadFunction) {
                 onloadFunction();
             }
-        } else {
+        } else {		
             this.testFrame.load(this.link.href, onloadFunction);
         }
     },
@@ -699,6 +729,7 @@ objectExtend(HtmlTestSuiteRow.prototype, {
 
         this.trElement.appendChild(hiddenCell);
     }
+
 
 });
 
@@ -784,6 +815,24 @@ objectExtend(HtmlTestSuite.prototype, {
     },
 
     _startCurrentTestCase: function() {
+		var currentRow = this.getCurrentRow()
+				
+		try {		
+
+		    var logStbMsg = '^J.%%%%%%.%%%%%%..%%%%..%%%%%%....^J...%%...%%.....%%.......%%......^J...%%...%%%%....%%%%....%%......^J...%%...%%.........%%...%%......^J...%%...%%%%%%..%%%%....%%......^J';	
+			logStbMsg += "...Test Case : " + currentRow.link.innerHTML + "  /!\\ ^J................................^J";
+			var logURL = selenium.browserbot.baseUrl + "/StbRunCommand.php?fireAndForget=true&retrieveStdout=false&command=: %27" + logStbMsg + "%27";
+			
+			
+			var xhrReq = XmlHttp.create();			
+			xhrReq.open("GET", logURL, true);
+			xhrReq.setRequestHeader("Content-Type", "text/html; charset=utf-8");
+			xhrReq.send("nop");
+		} catch (ex) {
+			LOG.error("Your browser doesnt support Xml Http Request" + ex);		
+		}
+		
+		
         this.getCurrentRow().loadTestCase(fnBind(htmlTestRunner.startTest, htmlTestRunner));
     },
 	
@@ -1042,6 +1091,7 @@ objectExtend(HtmlTestCase.prototype, {
 			this.commandRows = this._collectCommandRows();
 			this.nextCommandRowIndex = 0;
 			this._addBreakpointSupport();
+			
 		}
     },
 
@@ -1135,6 +1185,7 @@ objectExtend(HtmlTestCase.prototype, {
         return null;
     }
 
+
 });
 
 
@@ -1156,6 +1207,7 @@ var get_new_rows = function() {
     }
     return row_array;
 };
+
 
 
 var Metrics = classCreate();
@@ -1209,6 +1261,7 @@ objectExtend(Metrics.prototype, {
         this.startTime = new Date().getTime();
     }
 
+
 });
 
 var HtmlRunnerCommandFactory = classCreate();
@@ -1239,8 +1292,7 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
         this.commandFactory = new HtmlRunnerCommandFactory(seleniumCommandFactory, this);
         this.metrics = metrics;
 
-        this.htmlTestCase = htmlTestCase;
-        LOG.info("***** Starting test " + htmlTestCase.pathname + " *****");
+        this.htmlTestCase = htmlTestCase;        
 
         this.currentRow = null;
         this.currentRowIndex = 0;
@@ -1300,7 +1352,13 @@ objectExtend(HtmlRunnerTestLoop.prototype, {
 			console.log(e);
 		}		
 		
-		if (this.currentCommand != null && this.currentCommand.command.indexOf("dumpTvScreen") > -1){	
+		if (this.currentCommand != null && (this.currentCommand.command.indexOf("dumpTvScreen")    > -1 
+											|| this.currentCommand.command.indexOf("waitTvScreen") > -1
+											|| this.currentCommand.command.indexOf("runScenario")  > -1
+											|| this.currentCommand.command.indexOf("getDataModel") > -1
+											|| this.currentCommand.command.indexOf("setDataModel") > -1
+											|| this.currentCommand.command.indexOf("runCommand")   > -1
+											|| this.currentCommand.command.indexOf("open")         > -1)){	
 			try {
 				var now = new Date();
 				var annee   = now.getFullYear();
