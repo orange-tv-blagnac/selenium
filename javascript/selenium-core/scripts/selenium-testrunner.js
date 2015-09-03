@@ -180,6 +180,7 @@ objectExtend(HtmlTestRunner.prototype, {
 			shortSuiteName = testSuiteName.substring(posSlash);
 
 		    var logStbMsg = '^J.%%%%%%.%%%%%%..%%%%..%%%%%%....^J...%%...%%.....%%.......%%......^J...%%...%%%%....%%%%....%%......^J...%%...%%.........%%...%%......^J...%%...%%%%%%..%%%%....%%......^J';	
+			logStbMsg += "..." + new Date().getTime()  + "^J";
 			logStbMsg += "...Test Suite : " + shortSuiteName + " /!\\ ^J................................^J";
 
 			var logURL = self.controlPanel.getBaseUrl() + "/StbRunCommand.php?fireAndForget=true&retrieveStdout=false&command=: %27" + logStbMsg + "%27";
@@ -820,6 +821,7 @@ objectExtend(HtmlTestSuite.prototype, {
 		try {		
 
 		    var logStbMsg = '^J.%%%%%%.%%%%%%..%%%%..%%%%%%....^J...%%...%%.....%%.......%%......^J...%%...%%%%....%%%%....%%......^J...%%...%%.........%%...%%......^J...%%...%%%%%%..%%%%....%%......^J';	
+			logStbMsg += "..." + new Date().getTime()  + "^J";
 			logStbMsg += "...Test Case : " + currentRow.link.innerHTML + "  /!\\ ^J................................^J";
 			var logURL = selenium.browserbot.baseUrl + "/StbRunCommand.php?fireAndForget=true&retrieveStdout=false&command=: %27" + logStbMsg + "%27";
 			
